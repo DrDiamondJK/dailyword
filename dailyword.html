@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Daily Wordle</title>
+    <style>
+        body {
+            background-color: #121213;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- SPLASH SCREEN --- */
+        #splash-screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: #121213;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .rules-box {
+            background-color: #2c2c2e;
+            padding: 15px;
+            border-radius: 10px;
+            width: 85%;
+            max-width: 320px;
+            text-align: left;
+            border: 2px solid #3a3a3c;
+        }
+
+        #start-btn {
+            margin-top: 20px;
+            background-color: #538d4e;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 50px;
+        }
+
+        /* --- GAME SCREEN --- */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        header {
+            padding: 8px 0;
+            border-bottom: 1px solid #3a3a3c;
+        }
+
+        h1 { margin: 0; font-size: 18px; letter-spacing: 1px; }
+
+        /* The "Play Area" - pushed up */
+        #game-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Keeps it near the top */
+            padding-top: 15px; 
+        }
+
+        #board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 4px;
+            width: 220px; /* Smaller board to save vertical space */
+        }
+
+        .tile {
+            width: 50px; height: 50px; /* Smaller tiles */
+            border: 2px solid #3a3a3c;
+            font-size: 28px; font-weight: bold;
+            display: flex; align-items: center; justify-content: center;
+            text-transform: uppercase;
+        }
+
+        /* --- THE KEYBOARD FIX --- */
+        #keyboard {
+            width: 100%;
+            padding-bottom: 80px; /* Increased bottom padding to clear Pixel nav bar */
+            background-color: #121213;
+        }
+
+        .row { display: flex; justify-content: center; margin: 3px 0; }
+        
+        .key {
+            background-color: #818384;
+            color: white;
+            font-weight: bold;
+            border-radius: 4px;
+            margin: 0 2px;
+            height: 48px; /* Slightly shorter keys */
+            width: 28px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+        }
+        .key-wide { width: 42px; font-size: 11px; }
+
+        /* Colors & Status */
+        .correct { background-color: #538d4e; border-color: #538d4e; }
+        .present { background-color: #b59f3b; border-color: #b59f3b; }
+        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .key.correct { background-color: #538d4e; }
+        .key.present { background-color: #b59f3b; }
+        .key.absent { opacity: 0.15; pointer-events: none; }
+
+        #message {
+            margin-bottom: 10px;
+            background: white; color: black;
+            padding: 5px 15px;
+            border-radius: 4px;
+            font-weight: bold;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splash-screen">
+        <div class="rules-box">
+            <h2 style="text-align:center; margin-top:0;">HOW TO PLAY</h2>
+            <p>• Guess the 4-letter word.</p>
+            <p>• <span style="color:#538d4e">Green</span>: Right letter, right spot.</p>
+            <p>• <span style="color:#b59f3b">Yellow</span>: Right letter, wrong spot.</p>
+            <p>• Wrong letters will disappear!</p>
+        </div>
+        <button id="start-btn" onclick="startGame()">OK, PLAY!</button>
+    </div>
+
+    <div id="game-screen">
+        <header><h1>DAILY 4-LETTER</h1></header>
+        <div id="game-container">
+            <div id="message"></div>
+            <div id="board"></div>
+        </div>
+        <div id="keyboard">
+            <div class="row" id="row1"></div>
+            <div class="row" id="row2"></div>
+            <div class="row" id="row3"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game configuration
+        const wordList = ["CATS", "DOGS", "LOVE", "BIRD", "PLAY", "STAR", "BLUE", "MILK", "JUMP", "LION", "FISH", "HOME", "READ"];
+        const dayIndex = Math.floor(new Date().setHours(0,0,0,0) / 86400000);
+        const secret = wordList[dayIndex % wordList.length];
+        const height = 6, width = 4;
+        let row = 0, col = 0, gameOver = false;
+
+        window.onload = () => { initBoard(); initKeyboard(); };
+
+        function startGame() {
+            document.getElementById("splash-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "flex";
+        }
+
+        function initBoard() {
+            const board = document.getElementById("board");
+            for (let i = 0; i < height * width; i++) {
+                let tile = document.createElement("div");
+                tile.classList.add("tile");
+                tile.id = `tile-${Math.floor(i/width)}-${i%width}`;
+                board.appendChild(tile);
+            }
+        }
+
+        function initKeyboard() {
+            const keys = ["QWERTYUIOP".split(""), "ASDFGHJKL".split(""), ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⌫"]];
+            keys.forEach((r, i) => {
+                let rowDiv = document.getElementById(`row${i+1}`);
+                r.forEach(char => {
+                    let k = document.createElement("div");
+                    k.innerText = char;
+                    k.classList.add("key");
+                    if(char.length > 1) k.classList.add("key-wide");
+                    k.onclick = () => handleInput(char);
+                    k.id = `key-${char}`;
+                    rowDiv.appendChild(k);
+                });
+            });
+        }
+
+        function handleInput(key) {
+            if (gameOver) return;
+            if (key === "⌫") {
+                if (col > 0) { col--; document.getElementById(`tile-${row}-${col}`).innerText = ""; }
+            } else if (key === "ENTER") {
+                if (col === width) checkWin();
+                else showMsg("Too short!");
+            } else if (col < width) {
+                document.getElementById(`tile-${row}-${col}`).innerText = key;
+                col++;
+            }
+        }
+
+        function checkWin() {
+            let guess = "";
+            for (let c = 0; c < width; c++) guess += document.getElementById(`tile-${row}-${c}`).innerText;
+            let counts = {};
+            for (let c of secret) counts[c] = (counts[c] || 0) + 1;
+
+            for (let c = 0; c < width; c++) {
+                let tile = document.getElementById(`tile-${row}-${c}`), letter = guess[c], key = document.getElementById(`key-${letter}`);
+                if (secret[c] === letter) {
+                    tile.classList.add("correct");
+                    key.classList.remove("present");
+                    key.classList.add("correct");
+                    counts[letter]--;
+                }
+            }
+
+            for (let c = 0; c < width; c++) {
+                let tile = document.getElementById(`tile-${row}-${c}`), letter = guess[c], key = document.getElementById(`key-${letter}`);
+                if (!tile.classList.contains("correct")) {
+                    if (secret.includes(letter) && counts[letter] > 0) {
+                        tile.classList.add("present");
+                        if(!key.classList.contains("correct")) key.classList.add("present");
+                        counts[letter]--;
+                    } else {
+                        tile.classList.add("absent");
+                        if(!key.classList.contains("correct") && !key.classList.contains("present")) key.classList.add("absent");
+                    }
+                }
+            }
+
+            if (guess === secret) { gameOver = true; showMsg("YOU WON!"); }
+            else { row++; col = 0; if (row === height) { gameOver = true; showMsg("Word: " + secret); } }
+        }
+
+        function showMsg(t) {
+            let m = document.getElementById("message");
+            m.innerText = t; m.style.visibility = "visible";
+            setTimeout(() => m.style.visibility = "hidden", 2000);
+        }
+    </script>
+</body>
+</html>
