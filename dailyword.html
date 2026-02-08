@@ -4,12 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Wordle for Kids</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         /* --- GLOBAL STYLES --- */
         body {
             background-color: #121213;
             color: white;
-            font-family: 'Comic Sans MS', 'Chalkboard SE', Arial, sans-serif; /* Kid-friendly font */
+            /* APPLY THE NEW FONT HERE */
+            font-family: 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
             text-align: center;
             margin: 0;
             padding: 0;
@@ -44,13 +50,14 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        #overlay-title { font-size: 28px; margin: 0 0 10px 0; color: #fff; }
-        #overlay-message { font-size: 18px; margin-bottom: 20px; color: #d7dadc; }
+        #overlay-title { font-size: 32px; margin: 0 0 10px 0; color: #fff; font-weight: 700; }
+        #overlay-message { font-size: 20px; margin-bottom: 20px; color: #d7dadc; }
 
         .big-btn {
             background-color: #538d4e;
             color: white;
-            font-size: 22px;
+            font-family: 'Comic Neue', cursive; /* Ensure button uses font too */
+            font-size: 24px;
             font-weight: bold;
             padding: 15px 40px;
             border: none;
@@ -74,37 +81,38 @@
             border-bottom: 2px solid #3a3a3c;
             background-color: #121213;
         }
-        h1 { margin: 0; font-size: 20px; letter-spacing: 2px; color: #538d4e; }
+        h1 { margin: 0; font-size: 24px; letter-spacing: 1px; color: #538d4e; font-weight: 700; }
 
         #game-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Keeps board high */
+            justify-content: flex-start; 
             padding-top: 15px; 
         }
 
         #board {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-gap: 5px;
-            width: 230px; 
+            grid-gap: 6px;
+            width: 240px; 
         }
 
         .tile {
-            width: 52px; height: 52px;
+            width: 54px; height: 54px;
             border: 2px solid #3a3a3c;
-            font-size: 28px; font-weight: bold;
+            font-size: 32px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
             text-transform: uppercase;
-            border-radius: 4px; /* Softer corners */
+            border-radius: 8px; /* Softer corners */
+            background-color: #121213; /* Default bg */
         }
 
         /* --- KEYBOARD --- */
         #keyboard {
             width: 100%;
-            padding-bottom: 80px; /* High padding for Pixel nav bar */
+            padding-bottom: 80px; 
             background-color: #121213;
             user-select: none;
         }
@@ -117,18 +125,19 @@
             font-weight: bold;
             border-radius: 6px;
             margin: 0 2px;
-            height: 52px;
-            width: 30px; 
+            height: 54px;
+            width: 32px; 
             display: flex; align-items: center; justify-content: center;
-            font-size: 14px;
+            font-size: 16px;
             cursor: pointer;
+            font-family: 'Comic Neue', sans-serif;
         }
-        .key-wide { width: 48px; font-size: 12px; }
+        .key-wide { width: 50px; font-size: 14px; }
 
         /* COLORS */
-        .correct { background-color: #538d4e; border-color: #538d4e; }
-        .present { background-color: #b59f3b; border-color: #b59f3b; }
-        .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        .correct { background-color: #538d4e !important; border-color: #538d4e !important; }
+        .present { background-color: #b59f3b !important; border-color: #b59f3b !important; }
+        .absent { background-color: #3a3a3c !important; border-color: #3a3a3c !important; }
         
         /* Keyboard State Overrides */
         .key.correct { background-color: #538d4e; }
@@ -142,11 +151,13 @@
             color: black;
             text-align: center;
             border-radius: 5px;
-            padding: 10px;
+            padding: 10px 20px;
             position: absolute;
-            z-index: 1;
-            top: 70px;
+            z-index: 50;
+            top: 80px;
             font-weight: bold;
+            font-size: 18px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -202,7 +213,7 @@
             "NAME", "TIME", "WEEK", "YEAR", "ZERO"
         ];
         
-        let secret = "LOVE"; // Placeholder
+        let secret = "LOVE"; 
         const height = 6, width = 4;
         let row = 0, col = 0, gameOver = false;
 
@@ -213,31 +224,27 @@
         };
 
         function startNewGame() {
-            // 1. Reset Logic
             row = 0; col = 0; gameOver = false;
-            
-            // 2. Pick Random Word
             secret = wordList[Math.floor(Math.random() * wordList.length)];
-            console.log("Secret:", secret); // For Dad to cheat if needed ;)
+            console.log("Secret:", secret); 
 
-            // 3. Clear Board Visually
+            // Clear Board Visually
             for (let r = 0; r < height; r++) {
                 for (let c = 0; c < width; c++) {
                     let tile = document.getElementById(`tile-${r}-${c}`);
                     tile.innerText = "";
-                    tile.className = "tile"; // removes color classes
+                    tile.className = "tile"; 
                     tile.style.borderColor = "#3a3a3c";
                 }
             }
 
-            // 4. Reset Keyboard Visually
+            // Reset Keyboard Visually
             let keys = document.getElementsByClassName("key");
             for (let k of keys) {
-                k.className = "key"; // removes color classes
+                k.className = "key"; 
                 if (k.innerText.length > 1) k.classList.add("key-wide");
             }
 
-            // 5. Hide Overlay
             document.getElementById("overlay").style.display = "none";
         }
 
@@ -277,7 +284,6 @@
 
         function buildKeyboard() {
             const keys = ["QWERTYUIOP".split(""), "ASDFGHJKL".split(""), ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⌫"]];
-            // Clear existing rows if any
             document.getElementById("row1").innerHTML = "";
             document.getElementById("row2").innerHTML = "";
             document.getElementById("row3").innerHTML = "";
@@ -314,6 +320,11 @@
             let t = document.getElementById(`tile-${r}-${c}`);
             t.innerText = text;
             t.style.borderColor = color;
+            // Add pop animation
+            if(text !== "") {
+                t.style.animation = "pop 0.1s ease-in-out";
+                setTimeout(() => t.style.animation = "", 100);
+            }
         }
 
         // --- WIN LOGIC ---
@@ -321,9 +332,6 @@
             let guess = "";
             for (let c = 0; c < width; c++) guess += document.getElementById(`tile-${row}-${c}`).innerText;
             
-            // Allow any 4 letters (kid mode: don't validate against dictionary to avoid frustration)
-            // But we can check if it's a real word if we want. For now, let's keep it simple.
-
             let counts = {};
             for (let c of secret) counts[c] = (counts[c] || 0) + 1;
 
@@ -364,16 +372,13 @@
         function markTile(c, status) {
             let t = document.getElementById(`tile-${row}-${c}`);
             t.classList.add(status);
-            t.style.borderColor = ""; // Let CSS class handle color
+            t.style.borderColor = ""; 
         }
 
         function markKey(letter, status) {
             let k = document.getElementById(`key-${letter}`);
-            // Don't downgrade green to yellow
             if (status === "present" && k.classList.contains("correct")) return;
-            // Don't mark absent if it's already green/yellow
             if (status === "absent" && (k.classList.contains("correct") || k.classList.contains("present"))) return;
-            
             k.classList.add(status);
         }
 
