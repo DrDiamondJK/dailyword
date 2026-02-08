@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Daily Wordle</title>
+    <title>Wordle for Kids</title>
     <style>
+        /* --- GLOBAL STYLES --- */
         body {
             background-color: #121213;
             color: white;
-            font-family: Arial, sans-serif;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', Arial, sans-serif; /* Kid-friendly font */
             text-align: center;
             margin: 0;
             padding: 0;
@@ -19,12 +20,12 @@
             flex-direction: column;
         }
 
-        /* --- SPLASH SCREEN --- */
-        #splash-screen {
+        /* --- SPLASH / GAME OVER OVERLAY --- */
+        #overlay {
             position: absolute;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background-color: #121213;
+            background-color: rgba(18, 18, 19, 0.95);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -32,125 +33,145 @@
             z-index: 100;
         }
 
-        .rules-box {
+        .modal-box {
             background-color: #2c2c2e;
-            padding: 15px;
-            border-radius: 10px;
+            padding: 20px;
+            border-radius: 15px;
             width: 85%;
             max-width: 320px;
-            text-align: left;
-            border: 2px solid #3a3a3c;
+            text-align: center;
+            border: 3px solid #538d4e;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
 
-        #start-btn {
-            margin-top: 20px;
+        #overlay-title { font-size: 28px; margin: 0 0 10px 0; color: #fff; }
+        #overlay-message { font-size: 18px; margin-bottom: 20px; color: #d7dadc; }
+
+        .big-btn {
             background-color: #538d4e;
             color: white;
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
-            padding: 12px 40px;
+            padding: 15px 40px;
             border: none;
             border-radius: 50px;
+            cursor: pointer;
+            width: 80%;
+            margin-top: 10px;
         }
+        .big-btn:active { transform: scale(0.95); }
 
-        /* --- GAME SCREEN --- */
+        /* --- GAME LAYOUT --- */
         #game-screen {
-            display: none;
+            display: flex;
             flex-direction: column;
             height: 100%;
+            width: 100%;
         }
 
         header {
-            padding: 8px 0;
-            border-bottom: 1px solid #3a3a3c;
+            padding: 10px 0;
+            border-bottom: 2px solid #3a3a3c;
+            background-color: #121213;
         }
+        h1 { margin: 0; font-size: 20px; letter-spacing: 2px; color: #538d4e; }
 
-        h1 { margin: 0; font-size: 18px; letter-spacing: 1px; }
-
-        /* The "Play Area" - pushed up */
         #game-container {
             flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* Keeps it near the top */
+            justify-content: flex-start; /* Keeps board high */
             padding-top: 15px; 
         }
 
         #board {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            grid-gap: 4px;
-            width: 220px; /* Smaller board to save vertical space */
+            grid-gap: 5px;
+            width: 230px; 
         }
 
         .tile {
-            width: 50px; height: 50px; /* Smaller tiles */
+            width: 52px; height: 52px;
             border: 2px solid #3a3a3c;
             font-size: 28px; font-weight: bold;
             display: flex; align-items: center; justify-content: center;
             text-transform: uppercase;
+            border-radius: 4px; /* Softer corners */
         }
 
-        /* --- THE KEYBOARD FIX --- */
+        /* --- KEYBOARD --- */
         #keyboard {
             width: 100%;
-            padding-bottom: 80px; /* Increased bottom padding to clear Pixel nav bar */
+            padding-bottom: 80px; /* High padding for Pixel nav bar */
             background-color: #121213;
+            user-select: none;
         }
 
-        .row { display: flex; justify-content: center; margin: 3px 0; }
+        .row { display: flex; justify-content: center; margin: 4px 0; }
         
         .key {
             background-color: #818384;
             color: white;
             font-weight: bold;
-            border-radius: 4px;
+            border-radius: 6px;
             margin: 0 2px;
-            height: 48px; /* Slightly shorter keys */
-            width: 28px;
+            height: 52px;
+            width: 30px; 
             display: flex; align-items: center; justify-content: center;
-            font-size: 13px;
+            font-size: 14px;
+            cursor: pointer;
         }
-        .key-wide { width: 42px; font-size: 11px; }
+        .key-wide { width: 48px; font-size: 12px; }
 
-        /* Colors & Status */
+        /* COLORS */
         .correct { background-color: #538d4e; border-color: #538d4e; }
         .present { background-color: #b59f3b; border-color: #b59f3b; }
         .absent { background-color: #3a3a3c; border-color: #3a3a3c; }
+        
+        /* Keyboard State Overrides */
         .key.correct { background-color: #538d4e; }
         .key.present { background-color: #b59f3b; }
         .key.absent { opacity: 0.15; pointer-events: none; }
 
-        #message {
-            margin-bottom: 10px;
-            background: white; color: black;
-            padding: 5px 15px;
-            border-radius: 4px;
-            font-weight: bold;
+        /* Pop-up message during game */
+        #toast {
             visibility: hidden;
+            background-color: white;
+            color: black;
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            top: 70px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
 
-    <div id="splash-screen">
-        <div class="rules-box">
-            <h2 style="text-align:center; margin-top:0;">HOW TO PLAY</h2>
-            <p>• Guess the 4-letter word.</p>
-            <p>• <span style="color:#538d4e">Green</span>: Right letter, right spot.</p>
-            <p>• <span style="color:#b59f3b">Yellow</span>: Right letter, wrong spot.</p>
-            <p>• Wrong letters will disappear!</p>
+    <div id="overlay">
+        <div class="modal-box">
+            <h2 id="overlay-title">WORDLE TIME!</h2>
+            <div id="overlay-message">
+                Guess the 4-letter word.<br><br>
+                <span style="color:#538d4e; font-weight:bold;">Green</span> = Right Spot<br>
+                <span style="color:#b59f3b; font-weight:bold;">Yellow</span> = Wrong Spot
+            </div>
+            <button class="big-btn" onclick="startNewGame()">PLAY!</button>
         </div>
-        <button id="start-btn" onclick="startGame()">OK, PLAY!</button>
     </div>
 
     <div id="game-screen">
-        <header><h1>DAILY 4-LETTER</h1></header>
+        <header><h1>GUESS THE WORD</h1></header>
+        
         <div id="game-container">
-            <div id="message"></div>
+            <div id="toast">Message</div>
             <div id="board"></div>
         </div>
+
         <div id="keyboard">
             <div class="row" id="row1"></div>
             <div class="row" id="row2"></div>
@@ -159,22 +180,93 @@
     </div>
 
     <script>
-        // Game configuration
-        const wordList = ["CATS", "DOGS", "LOVE", "BIRD", "PLAY", "STAR", "BLUE", "MILK", "JUMP", "LION", "FISH", "HOME", "READ"];
-        const dayIndex = Math.floor(new Date().setHours(0,0,0,0) / 86400000);
-        const secret = wordList[dayIndex % wordList.length];
+        // --- 7-YEAR-OLD APPROPRIATE WORD LIST ---
+        const wordList = [
+            // Animals & Nature
+            "BEAR", "BIRD", "CATS", "DOGS", "DUCK", "FISH", "FROG", "GOAT", "LAMB", 
+            "LION", "PIGS", "WOLF", "MOON", "STAR", "SNOW", "RAIN", "WIND", "TREE", 
+            "LEAF", "SAND", "ROCK", "HILL", "LAKE", "PARK", "ROSE", "FIRE", 
+            // Food
+            "CAKE", "CORN", "MILK", "RICE", "SOUP", "PEAR", "LIME", "KIWI", "FOOD", "PIE",
+            // Actions
+            "JUMP", "PLAY", "READ", "SING", "SWIM", "WALK", "DRAW", "COOK", "HELP", 
+            "LOVE", "GROW", "KICK", "RIDE", "STOP", "TALK", "WASH", "WORK", "LOOK",
+            // Objects
+            "BALL", "BOOK", "BOAT", "CARS", "DOLL", "DOOR", "KITE", "SHOE", "TOYS", 
+            "BIKE", "FLAG", "GIFT", "HOME", "ROOM", "SHIP", "SHOP", "BEDS",
+            // People
+            "BABY", "GIRL", "BOYS", "MOM", "DAD", "TEAM", "KING", 
+            // Descriptors / Other
+            "BLUE", "PINK", "COOL", "GOOD", "NICE", "TALL", "TINY", "FAST", "SLOW", 
+            "WARM", "COLD", "LOUD", "SOFT", "KIND", "EASY", "HARD", "LUCK", "MATH", 
+            "NAME", "TIME", "WEEK", "YEAR", "ZERO"
+        ];
+        
+        let secret = "LOVE"; // Placeholder
         const height = 6, width = 4;
         let row = 0, col = 0, gameOver = false;
 
-        window.onload = () => { initBoard(); initKeyboard(); };
+        // --- INIT ---
+        window.onload = () => { 
+            buildBoard(); 
+            buildKeyboard(); 
+        };
 
-        function startGame() {
-            document.getElementById("splash-screen").style.display = "none";
-            document.getElementById("game-screen").style.display = "flex";
+        function startNewGame() {
+            // 1. Reset Logic
+            row = 0; col = 0; gameOver = false;
+            
+            // 2. Pick Random Word
+            secret = wordList[Math.floor(Math.random() * wordList.length)];
+            console.log("Secret:", secret); // For Dad to cheat if needed ;)
+
+            // 3. Clear Board Visually
+            for (let r = 0; r < height; r++) {
+                for (let c = 0; c < width; c++) {
+                    let tile = document.getElementById(`tile-${r}-${c}`);
+                    tile.innerText = "";
+                    tile.className = "tile"; // removes color classes
+                    tile.style.borderColor = "#3a3a3c";
+                }
+            }
+
+            // 4. Reset Keyboard Visually
+            let keys = document.getElementsByClassName("key");
+            for (let k of keys) {
+                k.className = "key"; // removes color classes
+                if (k.innerText.length > 1) k.classList.add("key-wide");
+            }
+
+            // 5. Hide Overlay
+            document.getElementById("overlay").style.display = "none";
         }
 
-        function initBoard() {
+        // --- GAME OVER LOGIC ---
+        function endGame(won) {
+            gameOver = true;
+            let title = document.getElementById("overlay-title");
+            let msg = document.getElementById("overlay-message");
+            let btn = document.querySelector(".big-btn");
+
+            document.getElementById("overlay").style.display = "flex";
+            
+            if (won) {
+                title.innerText = "YOU WON! 🎉";
+                title.style.color = "#538d4e";
+                msg.innerHTML = `Great job!<br>The word was <b>${secret}</b>`;
+                btn.innerText = "PLAY AGAIN";
+            } else {
+                title.innerText = "GOOD TRY!";
+                title.style.color = "#d7dadc";
+                msg.innerHTML = `The word was <b>${secret}</b><br>Don't give up!`;
+                btn.innerText = "TRY NEW WORD";
+            }
+        }
+
+        // --- BUILDERS ---
+        function buildBoard() {
             const board = document.getElementById("board");
+            board.innerHTML = "";
             for (let i = 0; i < height * width; i++) {
                 let tile = document.createElement("div");
                 tile.classList.add("tile");
@@ -183,14 +275,19 @@
             }
         }
 
-        function initKeyboard() {
+        function buildKeyboard() {
             const keys = ["QWERTYUIOP".split(""), "ASDFGHJKL".split(""), ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "⌫"]];
+            // Clear existing rows if any
+            document.getElementById("row1").innerHTML = "";
+            document.getElementById("row2").innerHTML = "";
+            document.getElementById("row3").innerHTML = "";
+
             keys.forEach((r, i) => {
                 let rowDiv = document.getElementById(`row${i+1}`);
                 r.forEach(char => {
                     let k = document.createElement("div");
                     k.innerText = char;
-                    k.classList.add("key");
+                    k.className = "key";
                     if(char.length > 1) k.classList.add("key-wide");
                     k.onclick = () => handleInput(char);
                     k.id = `key-${char}`;
@@ -199,57 +296,92 @@
             });
         }
 
+        // --- INPUT HANDLING ---
         function handleInput(key) {
             if (gameOver) return;
             if (key === "⌫") {
-                if (col > 0) { col--; document.getElementById(`tile-${row}-${col}`).innerText = ""; }
+                if (col > 0) { col--; updateTile(row, col, "", "#3a3a3c"); }
             } else if (key === "ENTER") {
                 if (col === width) checkWin();
-                else showMsg("Too short!");
+                else showToast("Need 4 letters!");
             } else if (col < width) {
-                document.getElementById(`tile-${row}-${col}`).innerText = key;
+                updateTile(row, col, key, "#818384");
                 col++;
             }
         }
 
+        function updateTile(r, c, text, color) {
+            let t = document.getElementById(`tile-${r}-${c}`);
+            t.innerText = text;
+            t.style.borderColor = color;
+        }
+
+        // --- WIN LOGIC ---
         function checkWin() {
             let guess = "";
             for (let c = 0; c < width; c++) guess += document.getElementById(`tile-${row}-${c}`).innerText;
+            
+            // Allow any 4 letters (kid mode: don't validate against dictionary to avoid frustration)
+            // But we can check if it's a real word if we want. For now, let's keep it simple.
+
             let counts = {};
             for (let c of secret) counts[c] = (counts[c] || 0) + 1;
 
+            // Green Pass
             for (let c = 0; c < width; c++) {
-                let tile = document.getElementById(`tile-${row}-${c}`), letter = guess[c], key = document.getElementById(`key-${letter}`);
+                let letter = guess[c];
                 if (secret[c] === letter) {
-                    tile.classList.add("correct");
-                    key.classList.remove("present");
-                    key.classList.add("correct");
+                    markTile(c, "correct");
+                    markKey(letter, "correct");
                     counts[letter]--;
                 }
             }
 
+            // Yellow/Gray Pass
             for (let c = 0; c < width; c++) {
-                let tile = document.getElementById(`tile-${row}-${c}`), letter = guess[c], key = document.getElementById(`key-${letter}`);
+                let letter = guess[c];
+                let tile = document.getElementById(`tile-${row}-${c}`);
                 if (!tile.classList.contains("correct")) {
                     if (secret.includes(letter) && counts[letter] > 0) {
-                        tile.classList.add("present");
-                        if(!key.classList.contains("correct")) key.classList.add("present");
+                        markTile(c, "present");
+                        markKey(letter, "present");
                         counts[letter]--;
                     } else {
-                        tile.classList.add("absent");
-                        if(!key.classList.contains("correct") && !key.classList.contains("present")) key.classList.add("absent");
+                        markTile(c, "absent");
+                        markKey(letter, "absent");
                     }
                 }
             }
 
-            if (guess === secret) { gameOver = true; showMsg("YOU WON!"); }
-            else { row++; col = 0; if (row === height) { gameOver = true; showMsg("Word: " + secret); } }
+            if (guess === secret) {
+                setTimeout(() => endGame(true), 500);
+            } else {
+                row++; col = 0;
+                if (row === height) setTimeout(() => endGame(false), 500);
+            }
         }
 
-        function showMsg(t) {
-            let m = document.getElementById("message");
-            m.innerText = t; m.style.visibility = "visible";
-            setTimeout(() => m.style.visibility = "hidden", 2000);
+        function markTile(c, status) {
+            let t = document.getElementById(`tile-${row}-${c}`);
+            t.classList.add(status);
+            t.style.borderColor = ""; // Let CSS class handle color
+        }
+
+        function markKey(letter, status) {
+            let k = document.getElementById(`key-${letter}`);
+            // Don't downgrade green to yellow
+            if (status === "present" && k.classList.contains("correct")) return;
+            // Don't mark absent if it's already green/yellow
+            if (status === "absent" && (k.classList.contains("correct") || k.classList.contains("present"))) return;
+            
+            k.classList.add(status);
+        }
+
+        function showToast(msg) {
+            let t = document.getElementById("toast");
+            t.innerText = msg;
+            t.style.visibility = "visible";
+            setTimeout(() => t.style.visibility = "hidden", 2000);
         }
     </script>
 </body>
